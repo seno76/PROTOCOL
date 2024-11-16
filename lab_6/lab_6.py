@@ -63,14 +63,16 @@ def print_graph(matrix):
 
 def main():
     while True:
-        print("\n1. Пегги создает графы G1, G2 и H")
+        print("\n0. Создание графов G1, G2")
+        print("1. Пегги изоморфный граф граф H")
         print("2. Виктор выбирает граф для проверки")
-        print("3. Пегги отвечает на запрос Виктора")
-        print("4. Выход")
+        print("3. Пегги отвечает на запрос Виктора (и высылает перестановку)")
+        print("4. Проверка изоморфности")
+        print("5. Выход")
 
         choice = input("Выберите действие: ")
-
-        if choice == "1":
+        
+        if choice == "0":
             # Шаг 1: Генерация графа и перестановок
             n = int(input("Укажите количество вершин графа: "))
             degree = int(input("Укажите степени вершин у графа: "))
@@ -82,35 +84,64 @@ def main():
             write_permutation_to_file(secret_permutation, "secret_permutation.txt")
             G2 = apply_permutation(G1, secret_permutation)
             write_matrix_to_file(G2, "G2.txt")
+            print("Графы G1, G2 созданы и записаны в файлы.")
 
+        elif choice == "1":
+            with open("G1.txt", "r", encoding="UTF-8") as f:
+                G1 = f.readline().strip().split()
+            G2 = []
+            with open("G2.txt", "r", encoding="UTF-8") as f:
+                lines = f.readlines()
+                for line in lines:
+                    vec = [int(el) for el in line.split()]
+                    G2.append(vec)
             # Создание графа H, случайной перестановкой G2
             h_permutation = generate_permutation(len(G1))
             write_permutation_to_file(h_permutation, "permutation.txt")
             H = apply_permutation(G2, h_permutation)
             write_matrix_to_file(H, "H.txt")
-            print("Графы G1, G2 и H созданы и записаны в файлы.")
+            print("Граф H создан и записан в файл.")
 
         elif choice == "2":
             # Шаг 2: Виктор выбирает случайный бит и записывает его в файл
             bit = random.randint(0, 1)
             write_bit_to_file(bit)
             print(f"Виктор выбрал граф для проверки: {'G1' if bit == 0 else 'G2'}.")
-
         elif choice == "3":
+                bit = read_bit_from_file()
+                H = read_matrix_from_file("H.txt")
+
+                if bit == 1:
+                    # Проверка изоморфизма с графом G2
+                    G2 = read_matrix_from_file("G2.txt")
+
+                    h_permutation = read_permutation_from_file("permutation.txt")
+                    new_G2 = apply_permutation(G2, h_permutation)
+                    with open("combination_per.txt", "w", encoding="UTF-8") as f:
+                            f.write(" ".join([str(i) for i in h_permutation]))
+                    print("Перестановка сохранена в файл combination_per.txt")
+
+                else:
+                    # Проверка изоморфизма с графом G1
+                    G1 = read_matrix_from_file("G1.txt")
+                    secret_permutation = read_permutation_from_file("secret_permutation.txt")
+                    h_permutation = read_permutation_from_file("permutation.txt")
+                    combined_permutation = mix_permutation(h_permutation, secret_permutation)
+                    with open("combination_per.txt", "w", encoding="UTF-8") as f:
+                            f.write(" ".join([str(i) for i in combined_permutation]))
+                    print("Перестановка сохранена в файл combination_per.txt")
+        elif choice == "4":
             # Шаг 3: Пегги отвечает на запрос Виктора, проверяя изоморфизм
             try:
                 bit = read_bit_from_file()
                 H = read_matrix_from_file("H.txt")
-                print("Граф H: ")
-                print_graph(H)
-
                 if bit == 1:
                     # Проверка изоморфизма с графом G2
                     G2 = read_matrix_from_file("G2.txt")
                     print("Граф G2: ")
                     print_graph(G2)
 
-                    h_permutation = read_permutation_from_file("permutation.txt")
+                    h_permutation = read_permutation_from_file("combination_per.txt")
                     new_G2 = apply_permutation(G2, h_permutation)
                     print("Перестановка графа G2: ", h_permutation)
                     print_graph(new_G2)
@@ -124,11 +155,16 @@ def main():
                     G1 = read_matrix_from_file("G1.txt")
                     secret_permutation = read_permutation_from_file("secret_permutation.txt")
                     h_permutation = read_permutation_from_file("permutation.txt")
-                    combined_permutation = mix_permutation(h_permutation, secret_permutation)
+                    combined_permutation = read_permutation_from_file("combination_per.txt")
+                    with open("combination_per.txt", "w", encoding="UTF-8") as f:
+                            f.write(" ".join([str(i) for i in combined_permutation]))
+                    print("Перестановка сохранена в файл combination_per.txt")
+                    with open("combination_per.txt", "r", encoding="UTF-8") as f:
+                        per = f.readline().split()
+                    combined_permutation = [int(el) for el in per]
                     new_G1 = apply_permutation(G1, combined_permutation)
                     print("Перестановка графа G1: ", combined_permutation)
                     print_graph(new_G1)
-
                     if H == new_G1:
                         print("РЕЗУЛЬТАТ: Изоморфизм доказан для G1 и H.")
                     else:
@@ -138,7 +174,7 @@ def main():
             except ValueError:
                 print("Ошибка: некорректный формат файла 'challenge.txt'.")
 
-        elif choice == "4":
+        elif choice == "5":
             print("Выход из программы.")
             break
 
